@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset = "UTF-8">
+        <title>Companies - Job Tracker</title>
+    </head>
+    <body>
+        <h1>Companies Directory</h1>
+
+        <a href="/companies/add">+ Add New Comapny</a>
+
+        <table border="1">
+            <thread>
+                <tr>
+                    <th>Comapny Name</th>
+                    <th>Industry</th>
+                    <th>Website</th>
+                    <th>City</th>
+                    <th>State</th>
+                    <th>Notes</th>
+                    <th>Actions</th>
+                </tr>
+            </thread>
+            <tbody>
+                {% for company in companies %}
+                <tr>
+                    <td>{{ comapany.comapany_name }}</td>
+                    <td>{{ company.industry }}</td>
+
+                    <td><a href="{{ company.website }}" target="_blank">Link</a></td>
+
+                    <td>{{ company.city }}</td>
+                    <td>{{ company.state}}</td>
+                    <td>{{ company.notes}}</td>
+
+                    <td>
+                        <a href="#">Edit</a> | <a href="#">Delete</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </body>
+</html>

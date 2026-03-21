@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{%block content %}
+
+<h1>My Applications</h1>
+
+<form action="/applications" method="POST">
+    <label for="job_id">Job ID:</label>
+    <input  type="number" name="job_id" id="job_id" required>
+
+    <label for="application_date">Date Applied:</label>
+    <input  type="date" name="application_date" id="application_date" required>
+
+    <label for="status">Status:</label>
+    <select name="status" id="status">
+        <option value="Applied">Applied</option>
+        <option value="Screen">Screen</option>
+        <option value="Interview">Interview</option>
+        <option value="Rejected">Rejected</option>
+        <option value="Offer Received">Offer Received</option>
+        <option value="Withdrawn">Withdrawn</option>
+    </select>
+
+    <label for="resume_version">Resume Version:</label>
+    <input  type="text" name="resume_version" id="resume_version" required>
+
+    <label for="cover_letter_sent">Cover Letter Sent?</label>
+    <input  type="checkbox" name="cover_letter_sent" id="cover_letter_sent" value="1">
+
+    <button type="submit">Add Application</button>
+</form>
+
+<hr>
+
+<table border="1">
+    <thead>
+        <tr>
+            <th>Job ID</th>
+            <th>Date</th>
+            <th>Status</th>
+            <th>Resume Version</th>
+            <th>Cover Letter</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for app in applications %}
+        <tr>
+            <td>{{ app.job_id }}</td>
+            <td>{{ app.application_date }}</td>
+            <td>{{ app.status }}</td>
+            <td>{{ app.resume_version }}</td>
+            <td>{{ 'Yes' if app.cover_letter_sent else 'No' }}</td>
+
+            <td>
+                <a href="#">Edit</a> | <a href="#">Delete</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}

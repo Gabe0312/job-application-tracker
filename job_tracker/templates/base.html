@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset = "UTF-8">
+        <title>Job Application Tracker</title>
+    </head>
+    <body>
+        <nav>
+            <h2>My Job Tracker</h2>
+            <ul>
+                <li><a href="/">Dashboard</a></li>
+                <li><a href="/companies">Companies</a></li>
+                <li><a href="/jobs">Jobs</a></li>
+                <li><a href="/applications">Applications</a></li>
+                <li><a href="/contacts">Contacts</a></li>
+                <li><a href="/job_match">Job Match</a></li>
+            </ul>
+        </nav>
+
+        <main>
+            {% block content %}
+            {% endblock %}
+        </main>
+    </body>
+</html>

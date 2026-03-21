@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Network Contacts</h1>
+
+<form action="/contacts" method="POST">
+    
+    <label for="company_id">Company ID:</label>
+    <input type="number" name="company_id" id="company_id" required>
+
+    <label for="contact_name">Contact Name:</label>
+    <input type="text" name="contact_name" id="contact_name" required>
+
+    <label for="title">Job Title:</label>
+    <input type="text" name="title" id="title" >
+
+    <label for="email">Email:</label>
+    <input type="email" name="email" id="email" >
+
+    <label for="phone">Phone Number:</label>
+    <input type="tel" name="phone" id="phone" >
+
+    <label for="linkedin_url">LinkedIn URL:</label>
+    <input type="url" name="linkedin_url" id="linkedin_url" >
+
+    <label for="notes">Notes:</label>
+    <textarea name="notes" id="notes" rows="3" ></textarea>
+
+    <button type="submit">Add Contact</button>
+</form>
+
+<hr>
+
+<table border="1">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Company ID</th>
+            <th>Title</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>LinkedIn</th>
+            <th>Notes</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for contact in contacts %}
+        <tr>
+            <td>{{ contact.contact_name }}</td>
+            <td>{{ contact.company_id }}</td>
+            <td>{{ contact.title }}</td>
+            <td><a href="mailto:{{ contact.email }}">{{contact.email}}</a></td>
+
+            <td>{{ contact.phone }}</td>
+            <td>
+                
+            </td>
+
+            <td>
+                <a href="#">Edit</a> | <a href="#">Delete</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+
+   
