@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Job Match Finder</h1>
+<p>Enter your skills below to see which jobs are the best fit</p>
+<form action="/job_match" method="POST">
+    <label for="user_skills">My Skills (comma-separated):</label>
+    <input type="text" name="user_skills" id="user_skills" placeholder="e.g., Python, SQL, HTML" required style="width: 300px;">
+    <button type="submit">Find Matches</button>
+</form>
+
+<hr>
+
+{% if matches %}
+<h2>Job Matches</h2>
+<ul>
+    {% for match in matches %}
+    <li>
+        <strong>{{ match.job_title }} at {{ match.company_name }}</strong>
+        <span style="font-size:1.2em; font-weight: bold; color: green">
+            - {{ match.match_percentage }}% Match
+        </span>
+
+        <br>
+        <small>Matched: {{ match.matched_skills }}</small>
+        <br>
+        <small style="color: red;">Missing: {{match.missing_skills}}</small>
+    </li>
+    {% endfor %}
+</ul>
+{% elif request.method == 'POST' %}
+<p>No matches found. Try adding more skills or check your spelling.</p>
+{% endif %}
+{% endblock %}

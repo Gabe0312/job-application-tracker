@@ -2,10 +2,41 @@
 
 {%block content %}
 
-<h1>Jobs List</h1>
+<h1>Jobs Postings</h1>
 
 <form action="/jobs" method="POST">
-    <button type="submit"> Add Job</button>
+    <label for ="company_id">Company ID:</label>
+    <input type="number" name="company_id" id="company_id" required>
+
+    <label for="job_title">Job Title:</label>
+    <input type="text" name="job_title" id="job_title" required>
+
+    <label for="job_type">Job Type:</label>
+    <select name="job_type" id="job_type">
+        <option value="Full-Time">Full-Time</option>
+        <option value="Part-Time">Part-Time</option>
+        <option value="Contract">Contract</option>
+        <option value="Internship">Internship</option>
+    </select>
+
+    <label for="salary_min">Minimum Salary:</label>
+    <input type="number" name="salary_min" id="salary_min">
+
+    <label for="salary_max">Maximum Salary:</label>
+    <input type="number" name="salary_max" id="salary_max">
+
+    <label for="job_url">Job URL:</label>
+    <input type="url" name="job_url" id="job_url">
+
+    <label for="date_posted">Date Posted:</label>
+    <input type="date" name="date_posted" id="date_posted">
+
+    <label for="requirements">Required Skills (comma separated):</label>
+    <textarea name="requirements" id="requirements" rows="2"></textarea>
+
+    <button type="submit">Add Job</button>
+
+
 </form>
 
 <hr>
@@ -14,8 +45,12 @@
     <thead>
         <tr>
             <th>Job Title</th>
+            <th>Company ID</th>
             <th>Type</th>
             <th>Salary Range</th>
+            <th>Date Posted</th>
+            <th>Requirements</th>
+            <th>Link</th>
             <th>Actions</th>
         </tr>
     </thead>
@@ -23,7 +58,22 @@
         {% for job in jobs %}
         <tr>
             <td>{{ job.job_title }}</td>
-            <td><a href="#">Edit</a></td> | <a href="#">Delete</a></td>
+            <td>{{ job.company_id }}</td>
+            <td>{{ job.job_type }}</td>
+
+            <td>${{ job.salary_min }} - ${{ job.salary_max }}</td>
+
+            <td>{{ job.date_posted }}</td>
+            <td>{{ job.requirements }}</td>
+
+            <td>
+                {% if job.job_url %}
+                <a href="{{ job.job_url }}" target="_blank">View Posting</a>
+                {% endif %}
+            </td>
+            <td>
+                <a href="#">Edit</a> | <a href="#">Delete</a>
+            </td>
         </tr>
         {% endfor %}
     </tbody>

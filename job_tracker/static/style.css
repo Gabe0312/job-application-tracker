@@ -1,0 +1,129 @@
+:root{
+    --primary-color: #4CAF50;
+    --primary-hover: #45a049;
+    --background-color: #f4f4f4;
+    --surface-color: #ffffff;
+    --text-main: #1f2937;
+    --text-muted: #6b7280;
+    --border-color: #e5e7eb;
+}
+
+*{
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+}
+
+body{
+    font-family: system-ui, -apple-system, sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-main);
+    line-height: 1.5;
+}
+
+main{
+    max-width: 1200px;
+    margin: 40px auto;
+    padding: 30px;
+    background-color: var(--surface-color);
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+h1, h2, h3{
+    color: var(--text-main);
+    margin-bottom: 20px;
+}
+hr{
+    border: none;
+    border-top: 1px solid var(--border-color);
+    margin: 30px 0;
+}
+
+nav{
+    background-color: var(--text-main);
+    padding: 15px 40px;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+nav ul{
+    list-style: none;
+    display: flex;
+    gap: 20px;
+}
+
+nav a{
+    color: #d1d5db;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+nav a:hover{
+    color: white;
+}
+
+table{
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+th, td{
+    padding: 12px 15px;
+    border: 1px solid var(--border-color);
+    text-align: left;
+}
+
+th{
+    background-color: #f8fafc;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+tr:hover{
+    background-color: #f9fafb;
+
+}
+form{
+    display: grid;
+    max-width: 500px;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+label{
+    font-weight: 500;
+    font-size: 0.9em;
+    margin-bottom: -5px;
+}
+input, select, textarea{
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    font-family: inherit;
+}
+input:focus, select:focus, textarea:focus{
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+input[type="checkbox"]{
+   width: auto;
+}
+button{
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-size: 1em;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.2s;
+    width: fit-content;
+}
+button:hover{
+    background-color: var(--primary-hover);
+}

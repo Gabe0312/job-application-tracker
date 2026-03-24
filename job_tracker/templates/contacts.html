@@ -53,9 +53,11 @@
 
             <td>{{ contact.phone }}</td>
             <td>
-                
+                {% if contact.linkedin_url %}
+                <a href="{{ contact.linkedin_url }}" target="_blank">Profile</a>
+                {% endif %}
             </td>
-
+            <td>{{ contact.notes }}</td>
             <td>
                 <a href="#">Edit</a> | <a href="#">Delete</a>
             </td>

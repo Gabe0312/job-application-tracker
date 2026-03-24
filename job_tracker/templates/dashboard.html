@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Welcome to the Job Tracker</h1>
+<p>Use the navigation links above to manage your job search:</p>
+
+<div style="border: 1px solid #ccc; padding: 20px; border-radius: 8px; width:250px; text-align: center; margin-top: 20px; background-color: #f9f9f9;  ">
+    <h2 style="margin-top: 0;">Total Applications</h2>
+
+    <p style="font-size: 4em; font-weight: bold; color: #0056b3; margin: 0;">
+        {{ stats.count }}
+    </p>
+
+</div>
+
+<div style="margin-top: 30px;">
+    <h3>Quick Actions</h3>
+    <ul>
+        <li><a href="/jobs">Add a new Job Posting</a></li>
+        <li><a href="/applications">Log a recent application</a></li>
+        <li><a href="/job_match">Run the job match algorithm</a></li>
+    </ul>
+
+</div>
+{% endblock %}
