@@ -1,44 +1,103 @@
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset = "UTF-8">
-        <title>Companies - Job Tracker</title>
-    </head>
-    <body>
-        <h1>Companies Directory</h1>
+{% extends "base.html" %}
+{% block content %}
+<div class="content-stack">
+    <div class="page-header">
+        <div>
+            <h1>Companies</h1>
+            <p class="page-subtitle">Keep a clean list of target employers, the markets they operate in, and your notes about each one.</p>
+        </div>
+    </div>
 
-        <a href="/companies/add">+ Add New Comapny</a>
+    <section class="section-card">
+        <form class="panel-form" action="{% if editing_company %}/companies/{{ editing_company.company_id }}/edit{% else %}/companies{% endif %}" method="POST">
+            {% if error %}
+            <p class="alert alert-error">{{ error }}</p>
+            {% endif %}
 
-        <table border="1">
-            <thread>
-                <tr>
-                    <th>Comapny Name</th>
-                    <th>Industry</th>
-                    <th>Website</th>
-                    <th>City</th>
-                    <th>State</th>
-                    <th>Notes</th>
-                    <th>Actions</th>
-                </tr>
-            </thread>
-            <tbody>
-                {% for company in companies %}
-                <tr>
-                    <td>{{ comapany.comapany_name }}</td>
-                    <td>{{ company.industry }}</td>
+            <h2>{% if editing_company %}Edit Company{% else %}Add New Company{% endif %}</h2>
 
-                    <td><a href="{{ company.website }}" target="_blank">Link</a></td>
+            <label for="company_name">Company Name</label>
+            <input type="text" name="company_name" id="company_name" value="{{ form_data.company_name }}" required>
 
-                    <td>{{ company.city }}</td>
-                    <td>{{ company.state}}</td>
-                    <td>{{ company.notes}}</td>
+            <label for="industry">Industry</label>
+            <input type="text" name="industry" id="industry" value="{{ form_data.industry }}">
 
-                    <td>
-                        <a href="#">Edit</a> | <a href="#">Delete</a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </body>
-</html>
+            <label for="website">Website</label>
+            <input type="url" name="website" id="website" value="{{ form_data.website }}" placeholder="https://...">
+
+            <label for="city">City</label>
+            <input type="text" name="city" id="city" value="{{ form_data.city }}">
+
+            <label for="state">State</label>
+            <input type="text" name="state" id="state" value="{{ form_data.state }}">
+
+            <label for="notes">Notes</label>
+            <textarea name="notes" id="notes">{{ form_data.notes }}</textarea>
+
+            <div class="form-actions">
+                <button type="submit">{% if editing_company %}Save Changes{% else %}Add Company{% endif %}</button>
+                {% if editing_company %}
+                <a class="secondary-link" href="/companies">Cancel</a>
+                {% endif %}
+            </div>
+        </form>
+    </section>
+
+    <section class="table-card">
+        <div class="table-card-header">
+            <h2>Company Directory</h2>
+        </div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Company Name</th>
+                        <th>Industry</th>
+                        <th>Website</th>
+                        <th>City</th>
+                        <th>State</th>
+                        <th>Notes</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for company in companies %}
+                    <tr>
+                        <td>{{ company.company_name }}</td>
+                        <td>{{ company.industry or 'Not set' }}</td>
+                        <td>
+                            {% if company.website %}
+                            <a href="{{ company.website }}" target="_blank">Visit site</a>
+                            {% else %}
+                            Not set
+                            {% endif %}
+                        </td>
+                        <td>{{ company.city or 'Not set' }}</td>
+                        <td>{{ company.state or 'Not set' }}</td>
+                        <td>{{ company.notes or 'No notes yet' }}</td>
+                        <td class="table-actions">
+                            <a class="action-button edit-action" href="/companies/{{ company.company_id }}/edit">Edit</a>
+                            {% if company.job_count == 0 and company.contact_count == 0 %}
+                            <form action="/companies/{{ company.company_id }}/delete" method="POST" class="inline-action-form">
+                                <button type="submit" class="delete-action">Delete</button>
+                            </form>
+                            {% else %}
+                            <button type="button" class="delete-action disabled-action" disabled>Delete</button>
+                            <p class="action-hint">
+                                Remove {{ company.job_count }} job{{ '' if company.job_count == 1 else 's' }}
+                                and {{ company.contact_count }} contact{{ '' if company.contact_count == 1 else 's' }} first
+                            </p>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr class="empty-row">
+                        <td colspan="7">No companies saved yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+{% endblock %}

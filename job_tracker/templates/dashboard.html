@@ -1,25 +1,38 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>Welcome to the Job Tracker</h1>
-<p>Use the navigation links above to manage your job search:</p>
+<div class="content-stack">
+    <div class="page-header">
+        <div>
+            <h1>Welcome back</h1>
+            <p class="page-subtitle">Track your search in one place, from target companies to submitted applications and networking contacts.</p>
+        </div>
+    </div>
 
-<div style="border: 1px solid #ccc; padding: 20px; border-radius: 8px; width:250px; text-align: center; margin-top: 20px; background-color: #f9f9f9;  ">
-    <h2 style="margin-top: 0;">Total Applications</h2>
+    <div class="stats-grid">
+        <section class="stat-card">
+            <span class="stat-label">Total Applications</span>
+            <p class="stat-value">{{ stats.count }}</p>
+        </section>
+    </div>
 
-    <p style="font-size: 4em; font-weight: bold; color: #0056b3; margin: 0;">
-        {{ stats.count }}
-    </p>
-
-</div>
-
-<div style="margin-top: 30px;">
-    <h3>Quick Actions</h3>
-    <ul>
-        <li><a href="/jobs">Add a new Job Posting</a></li>
-        <li><a href="/applications">Log a recent application</a></li>
-        <li><a href="/job_match">Run the job match algorithm</a></li>
-    </ul>
-
+    <section class="section-card">
+        <h2>Quick Actions</h2>
+        <p class="page-subtitle">Jump into the next step of your job search.</p>
+        <div class="quick-links">
+            <a class="quick-link" href="/jobs">
+                Add a job posting
+                <small>Save a role you want to pursue.</small>
+            </a>
+            <a class="quick-link" href="/applications">
+                Log an application
+                <small>Track what you have already submitted.</small>
+            </a>
+            <a class="quick-link" href="/job_match">
+                Run job match
+                <small>Compare your skills against saved jobs.</small>
+            </a>
+        </div>
+    </section>
 </div>
 {% endblock %}

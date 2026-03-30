@@ -1,63 +1,114 @@
 {% extends "base.html" %}
 
 {%block content %}
+<div class="content-stack">
+    <div class="page-header">
+        <div>
+            <h1>Applications</h1>
+            <p class="page-subtitle">Track each submission, where it stands, and which resume version you used.</p>
+        </div>
+    </div>
 
-<h1>My Applications</h1>
+    <section class="section-card">
+        <form class="panel-form" action="{% if editing_application %}/applications/{{ editing_application.application_id }}/edit{% else %}/applications{% endif %}" method="POST">
+            {% if error %}
+            <p class="alert alert-error">{{ error }}</p>
+            {% endif %}
 
-<form action="/applications" method="POST">
-    <label for="job_id">Job ID:</label>
-    <input  type="number" name="job_id" id="job_id" required>
+            <h2>{% if editing_application %}Edit Application{% else %}Add Application{% endif %}</h2>
 
-    <label for="application_date">Date Applied:</label>
-    <input  type="date" name="application_date" id="application_date" required>
+            <label for="job_id">Job</label>
+            <select name="job_id" id="job_id" required>
+                <option value="">Select a job</option>
+                {% for job in jobs %}
+                <option value="{{ job.job_id }}" {% if form_data.job_id|int == job.job_id %}selected{% endif %}>
+                    {{ job.job_title }}{% if job.company_name %} at {{ job.company_name }}{% endif %} (ID {{ job.job_id }})
+                </option>
+                {% endfor %}
+            </select>
 
-    <label for="status">Status:</label>
-    <select name="status" id="status">
-        <option value="Applied">Applied</option>
-        <option value="Screen">Screen</option>
-        <option value="Interview">Interview</option>
-        <option value="Rejected">Rejected</option>
-        <option value="Offer Received">Offer Received</option>
-        <option value="Withdrawn">Withdrawn</option>
-    </select>
+            <label for="application_date">Date Applied</label>
+            <input  type="date" name="application_date" id="application_date" value="{{ form_data.application_date }}" required>
 
-    <label for="resume_version">Resume Version:</label>
-    <input  type="text" name="resume_version" id="resume_version" required>
+            <label for="status">Status</label>
+            <select name="status" id="status">
+                <option value="Applied" {% if form_data.status == 'Applied' %}selected{% endif %}>Applied</option>
+                <option value="Screen" {% if form_data.status == 'Screen' %}selected{% endif %}>Screen</option>
+                <option value="Interview" {% if form_data.status == 'Interview' %}selected{% endif %}>Interview</option>
+                <option value="Rejected" {% if form_data.status == 'Rejected' %}selected{% endif %}>Rejected</option>
+                <option value="Offer Received" {% if form_data.status == 'Offer Received' %}selected{% endif %}>Offer Received</option>
+                <option value="Withdrawn" {% if form_data.status == 'Withdrawn' %}selected{% endif %}>Withdrawn</option>
+            </select>
 
-    <label for="cover_letter_sent">Cover Letter Sent?</label>
-    <input  type="checkbox" name="cover_letter_sent" id="cover_letter_sent" value="1">
+            <label for="resume_version">Resume Version</label>
+            <input  type="text" name="resume_version" id="resume_version" value="{{ form_data.resume_version }}" required>
 
-    <button type="submit">Add Application</button>
-</form>
+            <div class="checkbox-row">
+                <input  type="checkbox" name="cover_letter_sent" id="cover_letter_sent" value="1" {% if form_data.cover_letter_sent %}checked{% endif %}>
+                <label for="cover_letter_sent">Cover letter sent</label>
+            </div>
 
-<hr>
+            <div class="form-actions">
+                <button type="submit" {% if not jobs %}disabled{% endif %}>
+                    {% if editing_application %}Save Changes{% else %}Add Application{% endif %}
+                </button>
+                {% if editing_application %}
+                <a class="secondary-link" href="/applications">Cancel</a>
+                {% endif %}
+            </div>
 
-<table border="1">
-    <thead>
-        <tr>
-            <th>Job ID</th>
-            <th>Date</th>
-            <th>Status</th>
-            <th>Resume Version</th>
-            <th>Cover Letter</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for app in applications %}
-        <tr>
-            <td>{{ app.job_id }}</td>
-            <td>{{ app.application_date }}</td>
-            <td>{{ app.status }}</td>
-            <td>{{ app.resume_version }}</td>
-            <td>{{ 'Yes' if app.cover_letter_sent else 'No' }}</td>
+            {% if not jobs %}
+            <p class="alert alert-info">Add a job on the Jobs page before creating applications.</p>
+            {% endif %}
+        </form>
+    </section>
 
-            <td>
-                <a href="#">Edit</a> | <a href="#">Delete</a>
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+    <section class="table-card">
+        <div class="table-card-header">
+            <h2>Application History</h2>
+        </div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Job</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th>Resume Version</th>
+                        <th>Cover Letter</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for app in applications %}
+                    <tr>
+                        <td>
+                            {% if app.job_title %}
+                            {{ app.job_title }}{% if app.company_name %} at {{ app.company_name }}{% endif %}
+                            {% else %}
+                            Job ID {{ app.job_id }}
+                            {% endif %}
+                        </td>
+                        <td>{{ app.application_date }}</td>
+                        <td>{{ app.status }}</td>
+                        <td>{{ app.resume_version }}</td>
+                        <td>{{ 'Yes' if app.cover_letter_sent else 'No' }}</td>
+                        <td class="table-actions">
+                            <a class="action-button edit-action" href="/applications/{{ app.application_id }}/edit">Edit</a>
+                            <form action="/applications/{{ app.application_id }}/delete" method="POST" class="inline-action-form">
+                                <button type="submit" class="delete-action">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr class="empty-row">
+                        <td colspan="6">No applications logged yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
 
 {% endblock %}

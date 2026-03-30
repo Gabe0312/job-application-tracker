@@ -1,34 +1,50 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>Job Match Finder</h1>
-<p>Enter your skills below to see which jobs are the best fit</p>
-<form action="/job_match" method="POST">
-    <label for="user_skills">My Skills (comma-separated):</label>
-    <input type="text" name="user_skills" id="user_skills" placeholder="e.g., Python, SQL, HTML" required style="width: 300px;">
-    <button type="submit">Find Matches</button>
-</form>
+<div class="content-stack">
+    <div class="page-header">
+        <div>
+            <h1>Job Match Finder</h1>
+            <p class="page-subtitle">Paste in your skills and compare them against the saved job postings in your tracker.</p>
+        </div>
+    </div>
 
-<hr>
+    <section class="section-card">
+        <form class="panel-form" action="/job_match" method="POST">
+            <label for="user_skills">My Skills</label>
+            <input type="text" name="user_skills" id="user_skills" placeholder="e.g., Python, SQL, HTML" required>
+            <div class="form-actions">
+                <button type="submit">Find Matches</button>
+            </div>
+        </form>
+    </section>
 
-{% if matches %}
-<h2>Job Matches</h2>
-<ul>
-    {% for match in matches %}
-    <li>
-        <strong>{{ match.job_title }} at {{ match.company_name }}</strong>
-        <span style="font-size:1.2em; font-weight: bold; color: green">
-            - {{ match.match_percentage }}% Match
-        </span>
-
-        <br>
-        <small>Matched: {{ match.matched_skills }}</small>
-        <br>
-        <small style="color: red;">Missing: {{match.missing_skills}}</small>
-    </li>
-    {% endfor %}
-</ul>
-{% elif request.method == 'POST' %}
-<p>No matches found. Try adding more skills or check your spelling.</p>
-{% endif %}
+    {% if matches %}
+    <section class="content-stack">
+        <div class="page-header">
+            <div>
+                <h2>Match Results</h2>
+                <p class="page-subtitle">These saved jobs share at least one of the skills you entered.</p>
+            </div>
+        </div>
+        <div class="match-list">
+            {% for match in matches %}
+            <article class="match-card">
+                <div class="match-card-header">
+                    <div>
+                        <h2>{{ match.job_title }}</h2>
+                        <p>{{ match.company_name }}</p>
+                    </div>
+                    <span class="match-score">{{ match.match_percentage }}% match</span>
+                </div>
+                <p class="match-meta"><strong>Matched skills:</strong> {{ match.matched_skills or 'None' }}</p>
+                <p class="match-meta missing"><strong>Missing skills:</strong> {{ match.missing_skills or 'None' }}</p>
+            </article>
+            {% endfor %}
+        </div>
+    </section>
+    {% elif request.method == 'POST' %}
+    <p class="alert alert-info">No matches found. Try adding more skills or double-checking the spelling.</p>
+    {% endif %}
+</div>
 {% endblock %}

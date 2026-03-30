@@ -2,19 +2,20 @@
 <html lang="en">
     <head>
         <meta charset = "UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Job Application Tracker</title>
         <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     </head>
     <body>
-        <nav>
-            <h2>My Job Tracker</h2>
-            <ul>
-                <li><a href="/">Dashboard</a></li>
-                <li><a href="/companies">Companies</a></li>
-                <li><a href="/jobs">Jobs</a></li>
-                <li><a href="/applications">Applications</a></li>
-                <li><a href="/contacts">Contacts</a></li>
-                <li><a href="/job_match">Job Match</a></li>
+        <nav class="site-nav">
+            <a class="brand" href="/">My Job Tracker</a>
+            <ul class="nav-links">
+                <li><a class="nav-link {% if request.path == '/' %}is-active{% endif %}" href="/">Dashboard</a></li>
+                <li><a class="nav-link {% if request.path.startswith('/companies') %}is-active{% endif %}" href="/companies">Companies</a></li>
+                <li><a class="nav-link {% if request.path.startswith('/jobs') %}is-active{% endif %}" href="/jobs">Jobs</a></li>
+                <li><a class="nav-link {% if request.path.startswith('/applications') %}is-active{% endif %}" href="/applications">Applications</a></li>
+                <li><a class="nav-link {% if request.path.startswith('/contacts') %}is-active{% endif %}" href="/contacts">Contacts</a></li>
+                <li><a class="nav-link {% if request.path.startswith('/job_match') %}is-active{% endif %}" href="/job_match">Job Match</a></li>
             </ul>
         </nav>
 

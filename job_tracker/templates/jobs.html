@@ -1,81 +1,135 @@
 {% extends "base.html" %}
 
 {%block content %}
+<div class="content-stack">
+    <div class="page-header">
+        <div>
+            <h1>Job Postings</h1>
+            <p class="page-subtitle">Store promising roles, keep the original posting link handy, and track the skills each one requires.</p>
+        </div>
+    </div>
 
-<h1>Jobs Postings</h1>
+    <section class="section-card">
+        <form class="panel-form" action="{% if editing_job %}/jobs/{{ editing_job.job_id }}/edit{% else %}/jobs{% endif %}" method="POST">
+            {% if error %}
+            <p class="alert alert-error">{{ error }}</p>
+            {% endif %}
 
-<form action="/jobs" method="POST">
-    <label for ="company_id">Company ID:</label>
-    <input type="number" name="company_id" id="company_id" required>
+            <h2>{% if editing_job %}Edit Job{% else %}Add Job{% endif %}</h2>
 
-    <label for="job_title">Job Title:</label>
-    <input type="text" name="job_title" id="job_title" required>
+            <label for ="company_id">Company</label>
+            <select name="company_id" id="company_id" required>
+                <option value="">Select a company</option>
+                {% for company in companies %}
+                <option value="{{ company.company_id }}" {% if form_data.company_id|int == company.company_id %}selected{% endif %}>
+                    {{ company.company_name }} (ID {{ company.company_id }})
+                </option>
+                {% endfor %}
+            </select>
 
-    <label for="job_type">Job Type:</label>
-    <select name="job_type" id="job_type">
-        <option value="Full-Time">Full-Time</option>
-        <option value="Part-Time">Part-Time</option>
-        <option value="Contract">Contract</option>
-        <option value="Internship">Internship</option>
-    </select>
+            <label for="job_title">Job Title</label>
+            <input type="text" name="job_title" id="job_title" value="{{ form_data.job_title }}" required>
 
-    <label for="salary_min">Minimum Salary:</label>
-    <input type="number" name="salary_min" id="salary_min">
+            <label for="job_type">Job Type</label>
+            <select name="job_type" id="job_type">
+                <option value="Full-Time" {% if form_data.job_type == 'Full-Time' %}selected{% endif %}>Full-Time</option>
+                <option value="Part-Time" {% if form_data.job_type == 'Part-Time' %}selected{% endif %}>Part-Time</option>
+                <option value="Contract" {% if form_data.job_type == 'Contract' %}selected{% endif %}>Contract</option>
+                <option value="Internship" {% if form_data.job_type == 'Internship' %}selected{% endif %}>Internship</option>
+            </select>
 
-    <label for="salary_max">Maximum Salary:</label>
-    <input type="number" name="salary_max" id="salary_max">
+            <label for="salary_min">Minimum Salary</label>
+            <input type="number" name="salary_min" id="salary_min" value="{{ form_data.salary_min }}">
 
-    <label for="job_url">Job URL:</label>
-    <input type="url" name="job_url" id="job_url">
+            <label for="salary_max">Maximum Salary</label>
+            <input type="number" name="salary_max" id="salary_max" value="{{ form_data.salary_max }}">
 
-    <label for="date_posted">Date Posted:</label>
-    <input type="date" name="date_posted" id="date_posted">
+            <label for="job_url">Job URL</label>
+            <input type="url" name="job_url" id="job_url" value="{{ form_data.job_url }}">
 
-    <label for="requirements">Required Skills (comma separated):</label>
-    <textarea name="requirements" id="requirements" rows="2"></textarea>
+            <label for="date_posted">Date Posted</label>
+            <input type="date" name="date_posted" id="date_posted" value="{{ form_data.date_posted }}">
 
-    <button type="submit">Add Job</button>
+            <label for="requirements">Required Skills</label>
+            <textarea name="requirements" id="requirements">{{ form_data.requirements }}</textarea>
 
-
-</form>
-
-<hr>
-
-<table border="1">
-    <thead>
-        <tr>
-            <th>Job Title</th>
-            <th>Company ID</th>
-            <th>Type</th>
-            <th>Salary Range</th>
-            <th>Date Posted</th>
-            <th>Requirements</th>
-            <th>Link</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for job in jobs %}
-        <tr>
-            <td>{{ job.job_title }}</td>
-            <td>{{ job.company_id }}</td>
-            <td>{{ job.job_type }}</td>
-
-            <td>${{ job.salary_min }} - ${{ job.salary_max }}</td>
-
-            <td>{{ job.date_posted }}</td>
-            <td>{{ job.requirements }}</td>
-
-            <td>
-                {% if job.job_url %}
-                <a href="{{ job.job_url }}" target="_blank">View Posting</a>
+            <div class="form-actions">
+                <button type="submit" {% if not companies %}disabled{% endif %}>
+                    {% if editing_job %}Save Changes{% else %}Add Job{% endif %}
+                </button>
+                {% if editing_job %}
+                <a class="secondary-link" href="/jobs">Cancel</a>
                 {% endif %}
-            </td>
-            <td>
-                <a href="#">Edit</a> | <a href="#">Delete</a>
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+            </div>
+
+            {% if not companies %}
+            <p class="alert alert-info">Add a company on the Companies page before creating jobs.</p>
+            {% endif %}
+        </form>
+    </section>
+
+    <section class="table-card">
+        <div class="table-card-header">
+            <h2>Saved Jobs</h2>
+        </div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Job Title</th>
+                        <th>Company</th>
+                        <th>Type</th>
+                        <th>Salary Range</th>
+                        <th>Date Posted</th>
+                        <th>Requirements</th>
+                        <th>Link</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for job in jobs %}
+                    <tr>
+                        <td>{{ job.job_title }}</td>
+                        <td>{{ job.company_name or ('ID ' ~ job.company_id) }}</td>
+                        <td>{{ job.job_type or 'Not set' }}</td>
+                        <td>
+                            {% if job.salary_min or job.salary_max %}
+                            {% if job.salary_min %}${{ job.salary_min }}{% else %}Open{% endif %}
+                            {% if job.salary_max %} - ${{ job.salary_max }}{% endif %}
+                            {% else %}
+                            Not listed
+                            {% endif %}
+                        </td>
+                        <td>{{ job.date_posted or 'Not set' }}</td>
+                        <td>
+                            {% if job.requirements and job.requirements.get('required_skills') %}
+                               {{ job.requirements.required_skills | join(', ') }}
+                            {% else %}
+                                None listed
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if job.posting_url %}
+                            <a href="{{ job.posting_url }}" target="_blank">View posting</a>
+                            {% else %}
+                            Not set
+                            {% endif %}
+                        </td>
+                        <td class="table-actions">
+                            <a class="action-button edit-action" href="/jobs/{{ job.job_id }}/edit">Edit</a>
+                            <form action="/jobs/{{ job.job_id }}/delete" method="POST" class="inline-action-form">
+                                <button type="submit" class="delete-action">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr class="empty-row">
+                        <td colspan="8">No job postings saved yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
 {% endblock %}
