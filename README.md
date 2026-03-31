@@ -32,3 +32,8 @@ job-application-tracker/
     ├── schema.sql
     ├── static/
     └── templates/
+
+
+https://github.com/user-attachments/assets/6d43a109-63fa-4aec-9bc6-706fd6d508e1
+
+
