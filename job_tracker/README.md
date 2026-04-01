@@ -4,7 +4,7 @@ Job Application Tracker is a Flask + MySQL app for organizing a job search in on
 
 ## What It Does
 
-- Shows a dashboard with a total application count and quick links
+- Shows a dashboard with application, company, job, and contact metrics plus quick links
 - Lets you add, edit, list, and delete companies
 - Lets you add, edit, list, and delete job postings
 - Lets you add, edit, list, and delete applications
@@ -76,10 +76,12 @@ Run these steps from the `job_tracker` directory.
    export DB_PASSWORD=your_password_here
    ```
 
+   If your local MySQL user does not require a password, you can leave `DB_PASSWORD` empty.
+
 6. Start the app:
 
    ```bash
-   python app.py or python3 app.py
+   python3 app.py
    ```
 
 7. Open `http://127.0.0.1:5000`.
@@ -96,6 +98,7 @@ Run these steps from the `job_tracker` directory.
 ## Data Notes
 
 - Job requirements are entered as comma-separated skills in the UI and stored as JSON in the `jobs.requirements` column.
+- Interview notes are stored in the `applications.interview_data` JSON column.
 - Jobs must belong to an existing company.
 - Applications must belong to an existing job.
 - Contacts must belong to an existing company.
