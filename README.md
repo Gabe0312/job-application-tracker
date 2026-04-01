@@ -34,6 +34,10 @@ job-application-tracker/
     └── templates/
 
 
-https://github.com/user-attachments/assets/6d43a109-63fa-4aec-9bc6-706fd6d508e1
+
+https://github.com/user-attachments/assets/05d2b6f0-4192-4ad1-adc8-763627d33c9a
+
+
+
 
 
