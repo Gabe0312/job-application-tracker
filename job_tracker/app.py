@@ -304,12 +304,25 @@ def load_company(cursor, company_id):
     cursor.execute('SELECT * FROM companies WHERE company_id = %s', (company_id,))
     return cursor.fetchone()
 
+
+def load_dashboard_stats(cursor):
+    cursor.execute(
+        '''
+        SELECT
+            (SELECT COUNT(*) FROM applications) AS applications_count,
+            (SELECT COUNT(*) FROM companies) AS companies_count,
+            (SELECT COUNT(*) FROM jobs) AS jobs_count,
+            (SELECT COUNT(*) FROM contacts) AS contacts_count
+        '''
+    )
+    return cursor.fetchone()
+
+
 @app.route('/')
 def dashboard():
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute('SELECT COUNT(*) as count FROM applications')
-    stats = cursor.fetchone()
+    stats = load_dashboard_stats(cursor)
     conn.close()
     return render_template('dashboard.html', stats=stats)
 
