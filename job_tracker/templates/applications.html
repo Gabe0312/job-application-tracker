@@ -22,7 +22,7 @@
                 <option value="">Select a job</option>
                 {% for job in jobs %}
                 <option value="{{ job.job_id }}" {% if form_data.job_id|int == job.job_id %}selected{% endif %}>
-                    {{ job.job_title }}{% if job.company_name %} at {{ job.company_name }}{% endif %} (ID {{ job.job_id }})
+                    {{ job.job_title }}{% if job.company_name %} at {{ job.company_name }}{% endif %}
                 </option>
                 {% endfor %}
             </select>
@@ -46,6 +46,15 @@
             <div class="checkbox-row">
                 <input  type="checkbox" name="cover_letter_sent" id="cover_letter_sent" value="1" {% if form_data.cover_letter_sent %}checked{% endif %}>
                 <label for="cover_letter_sent">Cover letter sent</label>
+            </div>
+
+            <div class="form-section">
+                <div class="form-section-header">
+                    <h3>Interview Notes</h3>
+                    <p>Save prep notes, questions asked, takeaways, or follow-up items in the application's interview data.</p>
+                </div>
+                <label for="interview_notes">Notes</label>
+                <textarea name="interview_notes" id="interview_notes" placeholder="Example: Hiring manager was most interested in API design, asked about SQL joins, send thank-you note by Friday.">{{ form_data.interview_notes }}</textarea>
             </div>
 
             <div class="form-actions">
@@ -76,6 +85,7 @@
                         <th>Status</th>
                         <th>Resume Version</th>
                         <th>Cover Letter</th>
+                        <th>Interview Notes</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -86,13 +96,20 @@
                             {% if app.job_title %}
                             {{ app.job_title }}{% if app.company_name %} at {{ app.company_name }}{% endif %}
                             {% else %}
-                            Job ID {{ app.job_id }}
+                            Unknown job
                             {% endif %}
                         </td>
                         <td>{{ app.application_date }}</td>
                         <td>{{ app.status }}</td>
                         <td>{{ app.resume_version }}</td>
                         <td>{{ 'Yes' if app.cover_letter_sent else 'No' }}</td>
+                        <td class="table-note">
+                            {% if app.interview_notes %}
+                            {{ app.interview_notes }}
+                            {% else %}
+                            <span class="muted-value">No notes yet</span>
+                            {% endif %}
+                        </td>
                         <td class="table-actions">
                             <a class="action-button edit-action" href="/applications/{{ app.application_id }}/edit">Edit</a>
                             <form action="/applications/{{ app.application_id }}/delete" method="POST" class="inline-action-form">
@@ -102,7 +119,7 @@
                     </tr>
                     {% else %}
                     <tr class="empty-row">
-                        <td colspan="6">No applications logged yet.</td>
+                        <td colspan="7">No applications logged yet.</td>
                     </tr>
                     {% endfor %}
                 </tbody>

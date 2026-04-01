@@ -54,11 +54,55 @@ def contact_form_data(source):
 
 
 def empty_application_form():
-    return {field: '' for field in APPLICATION_FIELDS}
+    form_data = {field: '' for field in APPLICATION_FIELDS}
+    form_data['interview_notes'] = ''
+    return form_data
+
+
+def interview_data_to_dict(value):
+    if not value:
+        return {}
+
+    if isinstance(value, dict):
+        return dict(value)
+
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError:
+            return {'notes': value}
+
+        if isinstance(parsed, dict):
+            return parsed
+
+        return {'notes': str(parsed)}
+
+    return {}
+
+
+def interview_notes_from_data(value):
+    notes = interview_data_to_dict(value).get('notes', '')
+
+    if notes is None:
+        return ''
+
+    return str(notes)
+
+
+def interview_data_to_json(raw_notes, existing_value=None):
+    interview_data = interview_data_to_dict(existing_value)
+    notes = raw_notes.strip()
+
+    if notes:
+        interview_data['notes'] = notes
+    else:
+        interview_data.pop('notes', None)
+
+    return json.dumps(interview_data) if interview_data else None
 
 
 def application_form_data(source):
-    form_data = {}
+    form_data = empty_application_form()
 
     for field in APPLICATION_FIELDS:
         value = source.get(field, '')
@@ -71,6 +115,10 @@ def application_form_data(source):
             value = str(value)
 
         form_data[field] = value
+
+    form_data['interview_notes'] = interview_notes_from_data(
+        source.get('interview_notes', source.get('interview_data'))
+    )
 
     return form_data
 
@@ -204,7 +252,12 @@ def load_applications(cursor):
         LEFT JOIN companies ON jobs.company_id = companies.company_id
         ORDER BY applications.application_date DESC, applications.application_id DESC
     ''')
-    return cursor.fetchall()
+    applications = cursor.fetchall()
+
+    for application in applications:
+        application['interview_notes'] = interview_notes_from_data(application.get('interview_data'))
+
+    return applications
 
 
 def company_exists(cursor, company_id):
@@ -516,8 +569,8 @@ def applications():
         else:
             cursor.execute(
                 '''
-                INSERT INTO applications (job_id, application_date, status, resume_version, cover_letter_sent)
-                VALUES (%s, %s, %s, %s, %s)
+                INSERT INTO applications (job_id, application_date, status, resume_version, cover_letter_sent, interview_data)
+                VALUES (%s, %s, %s, %s, %s, %s)
                 ''',
                 (
                     form_data['job_id'],
@@ -525,6 +578,7 @@ def applications():
                     form_data['status'],
                     form_data['resume_version'],
                     1 if form_data['cover_letter_sent'] else 0,
+                    interview_data_to_json(form_data['interview_notes']),
                 )
             )
             conn.commit()
@@ -570,7 +624,8 @@ def edit_application(application_id):
                     application_date = %s,
                     status = %s,
                     resume_version = %s,
-                    cover_letter_sent = %s
+                    cover_letter_sent = %s,
+                    interview_data = %s
                 WHERE application_id = %s
                 ''',
                 (
@@ -579,6 +634,10 @@ def edit_application(application_id):
                     form_data['status'],
                     form_data['resume_version'],
                     1 if form_data['cover_letter_sent'] else 0,
+                    interview_data_to_json(
+                        form_data['interview_notes'],
+                        editing_application.get('interview_data'),
+                    ),
                     application_id,
                 )
             )

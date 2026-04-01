@@ -236,6 +236,22 @@ p{
     gap: 14px;
 }
 
+.form-section{
+    display: grid;
+    gap: 10px;
+    padding: 18px;
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    background:
+        linear-gradient(135deg, rgba(37, 99, 235, 0.05), rgba(22, 120, 77, 0.04)),
+        var(--surface-soft);
+}
+
+.form-section-header{
+    display: grid;
+    gap: 4px;
+}
+
 .form-actions{
     display: flex;
     flex-wrap: wrap;
@@ -376,6 +392,15 @@ tbody td{
     text-align: left;
     vertical-align: top;
     color: var(--text-main);
+}
+
+.muted-value{
+    color: var(--text-muted);
+}
+
+.table-note{
+    max-width: 320px;
+    white-space: pre-line;
 }
 
 tbody tr:first-child td{
