@@ -8,6 +8,7 @@ A Flask + MySQL web app for tracking a job search from one place. The project he
 - Full CRUD support for companies, jobs, applications, and contacts
 - Interview notes saved in the application data
 - Job match page that compares your skills against saved job requirements and shows a match percentage
+- Delete confirmations for destructive actions
 - Delete safeguards for companies with related jobs or contacts
 - Delete safeguards for jobs with linked applications
 
@@ -19,10 +20,17 @@ A Flask + MySQL web app for tracking a job search from one place. The project he
 - HTML templates
 - CSS
 
+## Prerequisites
+
+- Python 3 with `pip`
+- A local MySQL server
+- The `mysql` command-line client for importing `schema.sql`
+
 ## Project Layout
 
 ```text
 job-application-tracker/
+├── requirements.txt
 ├── README.md
 └── job_tracker/
     ├── AI_USAGE.md
@@ -44,7 +52,7 @@ job-application-tracker/
 
 ## Quick Start
 
-Run these steps from the `job_tracker` directory.
+Run these steps from the repository root unless noted otherwise.
 
 1. Create and activate a virtual environment.
 2. Install dependencies:
@@ -52,6 +60,8 @@ Run these steps from the `job_tracker` directory.
    ```bash
    pip install -r requirements.txt
    ```
+
+   The root `requirements.txt` delegates to `job_tracker/requirements.txt`, which remains the app-level source of truth.
 
 3. Create the database:
 
@@ -62,8 +72,10 @@ Run these steps from the `job_tracker` directory.
 4. Import the schema and sample data:
 
    ```bash
-   mysql -u root -p job_tracker < schema.sql
+   mysql -u root -p job_tracker < job_tracker/schema.sql
    ```
+
+   If you already imported an older dump, recreate the database so the current schema and field names match the app.
 
 5. Set environment variables:
 
@@ -80,7 +92,7 @@ Run these steps from the `job_tracker` directory.
 6. Start the app:
 
    ```bash
-   python3 app.py
+   python3 job_tracker/app.py
    ```
 
 7. Open `http://127.0.0.1:5000` in your browser.
@@ -88,8 +100,9 @@ Run these steps from the `job_tracker` directory.
 ## Notes
 
 - `job_tracker/README.md` contains a longer project walkthrough.
+- `requirements.txt` at the repo root is provided for convenience when installing from the top level.
 - `job_tracker/AI_USAGE.md` documents how AI tools were used during development.
-- `job_tracker/schema.sql` includes both the table definitions and populated sample records.
+- `job_tracker/schema.sql` is the MySQL dump with populated sample records used by the app.
 
 ## Demo Asset
 

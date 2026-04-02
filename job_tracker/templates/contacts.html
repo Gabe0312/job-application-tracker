@@ -26,14 +26,11 @@
                 {% endfor %}
             </select>
 
-            <label for="first_name">First Name</label>
-            <input type="text" name="first_name" id="first_name" value="{{ form_data.first_name }}" required>
+            <label for="contact_name">Contact Name</label>
+            <input type="text" name="contact_name" id="contact_name" value="{{ form_data.contact_name }}" required>
 
-            <label for="last_name">Last Name</label>
-            <input type="text" name="last_name" id="last_name" value="{{ form_data.last_name }}" required>
-
-            <label for="job_title">Job Title</label>
-            <input type="text" name="job_title" id="job_title" value="{{ form_data.job_title }}">
+            <label for="title">Title</label>
+            <input type="text" name="title" id="title" value="{{ form_data.title }}">
 
             <label for="email">Email</label>
             <input type="email" name="email" id="email" value="{{ form_data.email }}">
@@ -83,9 +80,9 @@
                 <tbody>
                     {% for contact in contacts %}
                     <tr>
-                        <td>{{ contact.first_name }} {{ contact.last_name }}</td>
+                        <td>{{ contact.contact_name }}</td>
                         <td>{{ contact.company_name or 'Unknown company' }}</td>
-                        <td>{{ contact.job_title or 'Not set' }}</td>
+                        <td>{{ contact.title or 'Not set' }}</td>
                         <td>
                             {% if contact.email %}
                             <a href="mailto:{{ contact.email }}">{{ contact.email }}</a>
@@ -104,7 +101,7 @@
                         <td>{{ contact.notes or 'No notes yet' }}</td>
                         <td class="table-actions">
                             <a class="action-button edit-action" href="/contacts/{{ contact.contact_id }}/edit">Edit</a>
-                            <form action="/contacts/{{ contact.contact_id }}/delete" method="POST" class="inline-action-form">
+                            <form action="/contacts/{{ contact.contact_id }}/delete" method="POST" class="inline-action-form" data-confirm-message="Delete {{ contact.contact_name }}? This cannot be undone.">
                                 <button type="submit" class="delete-action">Delete</button>
                             </form>
                         </td>

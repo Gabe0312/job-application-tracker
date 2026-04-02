@@ -32,10 +32,9 @@
 
             <label for="job_type">Job Type</label>
             <select name="job_type" id="job_type">
-                <option value="Full-Time" {% if form_data.job_type == 'Full-Time' %}selected{% endif %}>Full-Time</option>
-                <option value="Part-Time" {% if form_data.job_type == 'Part-Time' %}selected{% endif %}>Part-Time</option>
-                <option value="Contract" {% if form_data.job_type == 'Contract' %}selected{% endif %}>Contract</option>
-                <option value="Internship" {% if form_data.job_type == 'Internship' %}selected{% endif %}>Internship</option>
+                {% for job_type in job_types %}
+                <option value="{{ job_type }}" {% if form_data.job_type == job_type %}selected{% endif %}>{{ job_type }}</option>
+                {% endfor %}
             </select>
 
             <label for="salary_min">Minimum Salary</label>
@@ -102,22 +101,22 @@
                         </td>
                         <td>{{ job.date_posted or 'Not set' }}</td>
                         <td>
-                            {% if job.requirements and job.requirements.get('required_skills') %}
-                               {{ job.requirements.required_skills | join(', ') }}
+                            {% if job.requirements_list %}
+                               {{ job.requirements_list | join(', ') }}
                             {% else %}
                                 None listed
                             {% endif %}
                         </td>
                         <td>
-                            {% if job.posting_url %}
-                            <a href="{{ job.posting_url }}" target="_blank">View posting</a>
+                            {% if job.job_url %}
+                            <a href="{{ job.job_url }}" target="_blank">View posting</a>
                             {% else %}
                             Not set
                             {% endif %}
                         </td>
                         <td class="table-actions">
                             <a class="action-button edit-action" href="/jobs/{{ job.job_id }}/edit">Edit</a>
-                            <form action="/jobs/{{ job.job_id }}/delete" method="POST" class="inline-action-form">
+                            <form action="/jobs/{{ job.job_id }}/delete" method="POST" class="inline-action-form" data-confirm-message="Delete {{ job.job_title }}? This cannot be undone.">
                                 <button type="submit" class="delete-action">Delete</button>
                             </form>
                         </td>

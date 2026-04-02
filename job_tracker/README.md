@@ -10,6 +10,7 @@ Job Application Tracker is a Flask + MySQL app for organizing a job search in on
 - Lets you add, edit, list, and delete applications
 - Lets you add, edit, list, and delete contacts
 - Compares your skills against saved job requirements on the job match page
+- Prompts for confirmation before destructive deletes
 - Prevents deleting companies that still have jobs or contacts
 - Prevents deleting jobs that already have linked applications
 
@@ -20,6 +21,12 @@ Job Application Tracker is a Flask + MySQL app for organizing a job search in on
 - MySQL
 - HTML templates
 - CSS
+
+## Prerequisites
+
+- Python 3 with `pip`
+- A local MySQL server
+- The `mysql` command-line client for importing `schema.sql`
 
 ## Project Structure
 
@@ -52,6 +59,8 @@ Run these steps from the `job_tracker` directory.
    pip install -r requirements.txt
    ```
 
+   If you prefer to install from the repository root, use `pip install -r ../requirements.txt` instead.
+
 3. Create the MySQL database:
 
    ```sql
@@ -64,7 +73,7 @@ Run these steps from the `job_tracker` directory.
    mysql -u root -p job_tracker < schema.sql
    ```
 
-   `schema.sql` is a MySQL Workbench dump of the completed project database. Importing it recreates the tables and loads the saved records used by the app.
+   `schema.sql` is the MySQL dump for the completed project database. Importing it recreates the tables and loads the saved records used by the app.
 
 5. Set database environment variables for the machine where you are running the app:
 
@@ -103,7 +112,7 @@ Run these steps from the `job_tracker` directory.
 - Applications must belong to an existing job.
 - Contacts must belong to an existing company.
 - `schema.sql` contains both the schema and populated sample data from the final project database.
-- The schema includes a few extra columns that are not currently managed through the UI, so `schema.sql` is the source of truth for the database shape.
+- The schema reflects the MySQL dump currently used by the app, including legacy columns such as `jobs.posting_url` and `contacts.first_name` / `contacts.last_name`.
 
 ## Development Notes
 

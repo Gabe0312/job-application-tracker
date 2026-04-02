@@ -1,15 +1,15 @@
 import json
+
 from database import get_db
-from flask import Flask, render_template, request, redirect
+from flask import Flask, redirect, render_template, request
 
 
 app = Flask(__name__)
 
 CONTACT_FIELDS = (
     'company_id',
-    'first_name',
-    'last_name',
-    'job_title',
+    'contact_name',
+    'title',
     'email',
     'phone',
     'linkedin_url',
@@ -44,13 +44,95 @@ COMPANY_FIELDS = (
     'notes',
 )
 
+JOB_TYPES = (
+    'Full-time',
+    'Part-time',
+    'Contract',
+    'Internship',
+)
+
+APPLICATION_STATUSES = (
+    'Applied',
+    'Screening',
+    'Interview',
+    'Offer',
+    'Rejected',
+    'Withdrawn',
+)
+
+LEGACY_JOB_TYPE_MAP = {
+    'Full-Time': 'Full-time',
+    'Part-Time': 'Part-time',
+}
+
+LEGACY_STATUS_MAP = {
+    'Screen': 'Screening',
+    'Phone Screen': 'Screening',
+    'Interview Scheduled': 'Interview',
+    'Offer Received': 'Offer',
+}
+
+
+def table_columns(cursor, table_name):
+    cursor.execute(f'SHOW COLUMNS FROM {table_name}')
+    rows = cursor.fetchall()
+
+    columns = set()
+    for row in rows:
+        if isinstance(row, dict):
+            columns.add(row['Field'])
+        else:
+            columns.add(row[0])
+
+    return columns
+
+
+def jobs_use_spec_url(cursor):
+    return 'job_url' in table_columns(cursor, 'jobs')
+
+
+def contacts_use_combined_name(cursor):
+    return 'contact_name' in table_columns(cursor, 'contacts')
+
+
+def normalize_job_type(value):
+    if value in (None, ''):
+        return ''
+
+    text = str(value)
+    return LEGACY_JOB_TYPE_MAP.get(text, text)
+
+
+def normalize_application_status(value):
+    if value in (None, ''):
+        return ''
+
+    text = str(value)
+    return LEGACY_STATUS_MAP.get(text, text)
+
+
+def split_contact_name(full_name):
+    name = (full_name or '').strip()
+    if not name:
+        return '', ''
+
+    parts = name.split(None, 1)
+    if len(parts) == 1:
+        return parts[0], ''
+
+    return parts[0], parts[1]
+
 
 def empty_contact_form():
     return {field: '' for field in CONTACT_FIELDS}
 
 
 def contact_form_data(source):
-    return {field: source.get(field, '') for field in CONTACT_FIELDS}
+    form_data = {}
+    for field in CONTACT_FIELDS:
+        value = source.get(field, '')
+        form_data[field] = '' if value is None else str(value)
+    return form_data
 
 
 def empty_application_form():
@@ -111,6 +193,8 @@ def application_form_data(source):
             value = ''
         elif field == 'cover_letter_sent':
             value = '1' if value in (1, '1', True, 'true', 'True', 'on') else ''
+        elif field == 'status':
+            value = normalize_application_status(value)
         else:
             value = str(value)
 
@@ -127,24 +211,36 @@ def empty_job_form():
     return {field: '' for field in JOB_FIELDS}
 
 
-def job_requirements_to_text(value):
+def requirements_list_from_value(value):
     if not value:
-        return ''
+        return []
 
     if isinstance(value, dict):
-        skills = value.get('required_skills', [])
-        return ', '.join(skills)
-
-    if isinstance(value, str):
+        raw_skills = value.get('required_skills', [])
+    elif isinstance(value, str):
         try:
-            req_dict = json.loads(value)
+            parsed = json.loads(value)
         except json.JSONDecodeError:
-            return value
+            raw_skills = value.split(',')
+        else:
+            if isinstance(parsed, dict):
+                raw_skills = parsed.get('required_skills', [])
+            else:
+                raw_skills = []
+    else:
+        raw_skills = []
 
-        skills = req_dict.get('required_skills', [])
-        return ', '.join(skills)
+    skills = []
+    for skill in raw_skills:
+        text = str(skill).strip()
+        if text:
+            skills.append(text)
 
-    return str(value)
+    return skills
+
+
+def job_requirements_to_text(value):
+    return ', '.join(requirements_list_from_value(value))
 
 
 def job_requirements_to_json(raw_requirements):
@@ -153,6 +249,9 @@ def job_requirements_to_json(raw_requirements):
     else:
         req_list = []
 
+    if not req_list:
+        return None
+
     return json.dumps({'required_skills': req_list})
 
 
@@ -160,12 +259,12 @@ def job_form_data(source):
     form_data = empty_job_form()
 
     for field in JOB_FIELDS:
-        if field == 'job_url':
-            value = source.get('job_url', source.get('posting_url', ''))
-        elif field == 'requirements':
-            value = job_requirements_to_text(source.get(field, ''))
-        else:
-            value = source.get(field, '')
+        value = source.get(field, '')
+
+        if field == 'requirements':
+            value = job_requirements_to_text(value)
+        elif field == 'job_type':
+            value = normalize_job_type(value)
 
         if value is None:
             value = ''
@@ -184,7 +283,11 @@ def empty_company_form():
 
 
 def company_form_data(source):
-    return {field: source.get(field, '') for field in COMPANY_FIELDS}
+    form_data = {}
+    for field in COMPANY_FIELDS:
+        value = source.get(field, '')
+        form_data[field] = '' if value is None else str(value)
+    return form_data
 
 
 def load_companies(cursor):
@@ -206,55 +309,106 @@ def load_company_directory(cursor):
 
 
 def load_contacts(cursor):
-    cursor.execute('''
-        SELECT contacts.*, companies.company_name
-        FROM contacts
-        LEFT JOIN companies ON contacts.company_id = companies.company_id
-        ORDER BY contacts.created_at DESC, contacts.contact_id DESC
-    ''')
+    if contacts_use_combined_name(cursor):
+        cursor.execute(
+            '''
+            SELECT contacts.contact_id,
+                   contacts.company_id,
+                   contacts.contact_name,
+                   contacts.title,
+                   contacts.email,
+                   contacts.phone,
+                   contacts.linkedin_url,
+                   contacts.notes,
+                   companies.company_name
+            FROM contacts
+            LEFT JOIN companies ON contacts.company_id = companies.company_id
+            ORDER BY contacts.contact_id DESC
+            '''
+        )
+    else:
+        cursor.execute(
+            '''
+            SELECT contacts.contact_id,
+                   contacts.company_id,
+                   CONCAT_WS(' ', contacts.first_name, contacts.last_name) AS contact_name,
+                   contacts.job_title AS title,
+                   contacts.email,
+                   contacts.phone,
+                   contacts.linkedin_url,
+                   contacts.notes,
+                   companies.company_name
+            FROM contacts
+            LEFT JOIN companies ON contacts.company_id = companies.company_id
+            ORDER BY contacts.contact_id DESC
+            '''
+        )
+
     return cursor.fetchall()
 
 
 def load_jobs(cursor):
-    cursor.execute('''
+    cursor.execute(
+        '''
         SELECT jobs.job_id, jobs.job_title, companies.company_name
         FROM jobs
         LEFT JOIN companies ON jobs.company_id = companies.company_id
         ORDER BY companies.company_name, jobs.job_title
-    ''')
+        '''
+    )
     return cursor.fetchall()
 
 
 def load_job_postings(cursor):
-    cursor.execute('''
-        SELECT jobs.*, companies.company_name
+    job_url_column = 'jobs.job_url' if jobs_use_spec_url(cursor) else 'jobs.posting_url'
+    cursor.execute(
+        f'''
+        SELECT jobs.job_id,
+               jobs.company_id,
+               jobs.job_title,
+               jobs.job_type,
+               jobs.salary_min,
+               jobs.salary_max,
+               {job_url_column} AS job_url,
+               jobs.date_posted,
+               jobs.requirements,
+               companies.company_name
         FROM jobs
         LEFT JOIN companies ON jobs.company_id = companies.company_id
         ORDER BY jobs.date_posted DESC, jobs.job_id DESC
-    ''')
+        '''
+    )
     jobs = cursor.fetchall()
 
     for job in jobs:
-        if job.get('requirements'):
-            try:
-                job['requirements'] = json.loads(job['requirements'])
-            except json.JSONDecodeError:
-                job['requirements'] = {'required_skills': []}
+        job['job_type'] = normalize_job_type(job.get('job_type'))
+        job['requirements_list'] = requirements_list_from_value(job.get('requirements'))
 
     return jobs
 
 
 def load_applications(cursor):
-    cursor.execute('''
-        SELECT applications.*, jobs.job_title, companies.company_name
+    cursor.execute(
+        '''
+        SELECT applications.application_id,
+               applications.job_id,
+               applications.application_date,
+               applications.status,
+               applications.resume_version,
+               applications.cover_letter_sent,
+               applications.interview_data,
+               jobs.job_title,
+               companies.company_name
         FROM applications
         LEFT JOIN jobs ON applications.job_id = jobs.job_id
         LEFT JOIN companies ON jobs.company_id = companies.company_id
         ORDER BY applications.application_date DESC, applications.application_id DESC
-    ''')
+        '''
+    )
     applications = cursor.fetchall()
 
     for application in applications:
+        application['status'] = normalize_application_status(application.get('status'))
         application['interview_notes'] = interview_notes_from_data(application.get('interview_data'))
 
     return applications
@@ -286,18 +440,89 @@ def company_has_contacts(cursor, company_id):
 
 
 def load_contact(cursor, contact_id):
-    cursor.execute('SELECT * FROM contacts WHERE contact_id = %s', (contact_id,))
+    if contacts_use_combined_name(cursor):
+        cursor.execute(
+            '''
+            SELECT contact_id,
+                   company_id,
+                   contact_name,
+                   title,
+                   email,
+                   phone,
+                   linkedin_url,
+                   notes
+            FROM contacts
+            WHERE contact_id = %s
+            ''',
+            (contact_id,),
+        )
+    else:
+        cursor.execute(
+            '''
+            SELECT contact_id,
+                   company_id,
+                   CONCAT_WS(' ', first_name, last_name) AS contact_name,
+                   job_title AS title,
+                   email,
+                   phone,
+                   linkedin_url,
+                   notes
+            FROM contacts
+            WHERE contact_id = %s
+            ''',
+            (contact_id,),
+        )
+
     return cursor.fetchone()
 
 
 def load_application(cursor, application_id):
-    cursor.execute('SELECT * FROM applications WHERE application_id = %s', (application_id,))
-    return cursor.fetchone()
+    cursor.execute(
+        '''
+        SELECT application_id,
+               job_id,
+               application_date,
+               status,
+               resume_version,
+               cover_letter_sent,
+               interview_data
+        FROM applications
+        WHERE application_id = %s
+        ''',
+        (application_id,),
+    )
+    application = cursor.fetchone()
+
+    if application:
+        application['status'] = normalize_application_status(application.get('status'))
+
+    return application
 
 
 def load_job(cursor, job_id):
-    cursor.execute('SELECT * FROM jobs WHERE job_id = %s', (job_id,))
-    return cursor.fetchone()
+    job_url_column = 'job_url' if jobs_use_spec_url(cursor) else 'posting_url'
+    cursor.execute(
+        f'''
+        SELECT job_id,
+               company_id,
+               job_title,
+               job_type,
+               salary_min,
+               salary_max,
+               {job_url_column} AS job_url,
+               date_posted,
+               requirements
+        FROM jobs
+        WHERE job_id = %s
+        ''',
+        (job_id,),
+    )
+    job = cursor.fetchone()
+
+    if job:
+        job['job_type'] = normalize_job_type(job.get('job_type'))
+
+    return job
 
 
 def load_company(cursor, company_id):
@@ -327,7 +552,7 @@ def dashboard():
     return render_template('dashboard.html', stats=stats)
 
 
-@app.route('/companies', methods = ['GET', 'POST'])
+@app.route('/companies', methods=['GET', 'POST'])
 def companies():
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
@@ -338,7 +563,7 @@ def companies():
         error = 'Cannot delete a company that still has linked jobs or contacts.'
     elif request.args.get('error') == 'delete_failed':
         error = 'Could not delete that company. Please try again.'
-    
+
     if request.method == 'POST':
         form_data = company_form_data(request.form)
         cursor.execute(
@@ -348,12 +573,12 @@ def companies():
             ''',
             (
                 form_data['company_name'],
-                form_data['industry'],
-                form_data['website'],
-                form_data['city'],
-                form_data['state'],
-                form_data['notes'],
-            )
+                form_data['industry'] or None,
+                form_data['website'] or None,
+                form_data['city'] or None,
+                form_data['state'] or None,
+                form_data['notes'] or None,
+            ),
         )
         conn.commit()
         conn.close()
@@ -370,7 +595,7 @@ def companies():
     )
 
 
-@app.route('/companies/<int:company_id>/edit', methods = ['GET', 'POST'])
+@app.route('/companies/<int:company_id>/edit', methods=['GET', 'POST'])
 def edit_company(company_id):
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
@@ -398,13 +623,13 @@ def edit_company(company_id):
             ''',
             (
                 form_data['company_name'],
-                form_data['industry'],
-                form_data['website'],
-                form_data['city'],
-                form_data['state'],
-                form_data['notes'],
+                form_data['industry'] or None,
+                form_data['website'] or None,
+                form_data['city'] or None,
+                form_data['state'] or None,
+                form_data['notes'] or None,
                 company_id,
-            )
+            ),
         )
         conn.commit()
         conn.close()
@@ -421,7 +646,7 @@ def edit_company(company_id):
     )
 
 
-@app.route('/companies/<int:company_id>/delete', methods = ['POST'])
+@app.route('/companies/<int:company_id>/delete', methods=['POST'])
 def delete_company(company_id):
     conn = get_db()
     cursor = conn.cursor()
@@ -441,7 +666,8 @@ def delete_company(company_id):
     conn.close()
     return redirect('/companies')
 
-@app.route('/jobs', methods = ['GET', 'POST'])
+
+@app.route('/jobs', methods=['GET', 'POST'])
 def jobs():
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
@@ -451,28 +677,29 @@ def jobs():
 
     if request.args.get('error') == 'delete_blocked':
         error = 'Cannot delete a job that already has applications.'
-    
+
     if request.method == 'POST':
         form_data = job_form_data(request.form)
 
         if not company_exists(cursor, form_data['company_id']):
             error = 'Select a valid company before adding a job.'
         else:
+            job_url_column = 'job_url' if jobs_use_spec_url(cursor) else 'posting_url'
             cursor.execute(
-                '''
-                INSERT INTO jobs (job_title, company_id, job_type, salary_min, salary_max, date_posted, posting_url, requirements)
+                f'''
+                INSERT INTO jobs (job_title, company_id, job_type, salary_min, salary_max, date_posted, {job_url_column}, requirements)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                 ''',
                 (
                     form_data['job_title'],
                     form_data['company_id'],
-                    form_data['job_type'],
+                    normalize_job_type(form_data['job_type']) or None,
                     form_data['salary_min'] or None,
                     form_data['salary_max'] or None,
                     form_data['date_posted'] or None,
-                    form_data['job_url'],
+                    form_data['job_url'] or None,
                     job_requirements_to_json(form_data['requirements']),
-                )
+                ),
             )
             conn.commit()
             conn.close()
@@ -487,10 +714,11 @@ def jobs():
         error=error,
         form_data=form_data,
         editing_job=None,
+        job_types=JOB_TYPES,
     )
 
 
-@app.route('/jobs/<int:job_id>/edit', methods = ['GET', 'POST'])
+@app.route('/jobs/<int:job_id>/edit', methods=['GET', 'POST'])
 def edit_job(job_id):
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
@@ -510,8 +738,9 @@ def edit_job(job_id):
         if not company_exists(cursor, form_data['company_id']):
             error = 'Select a valid company before saving this job.'
         else:
+            job_url_column = 'job_url' if jobs_use_spec_url(cursor) else 'posting_url'
             cursor.execute(
-                '''
+                f'''
                 UPDATE jobs
                 SET company_id = %s,
                     job_title = %s,
@@ -519,21 +748,21 @@ def edit_job(job_id):
                     salary_min = %s,
                     salary_max = %s,
                     date_posted = %s,
-                    posting_url = %s,
+                    {job_url_column} = %s,
                     requirements = %s
                 WHERE job_id = %s
                 ''',
                 (
                     form_data['company_id'],
                     form_data['job_title'],
-                    form_data['job_type'],
+                    normalize_job_type(form_data['job_type']) or None,
                     form_data['salary_min'] or None,
                     form_data['salary_max'] or None,
                     form_data['date_posted'] or None,
-                    form_data['job_url'],
+                    form_data['job_url'] or None,
                     job_requirements_to_json(form_data['requirements']),
                     job_id,
-                )
+                ),
             )
             conn.commit()
             conn.close()
@@ -548,10 +777,11 @@ def edit_job(job_id):
         error=error,
         form_data=form_data,
         editing_job=editing_job,
+        job_types=JOB_TYPES,
     )
 
 
-@app.route('/jobs/<int:job_id>/delete', methods = ['POST'])
+@app.route('/jobs/<int:job_id>/delete', methods=['POST'])
 def delete_job(job_id):
     conn = get_db()
     cursor = conn.cursor()
@@ -566,14 +796,14 @@ def delete_job(job_id):
     return redirect('/jobs')
 
 
-@app.route('/applications', methods = ['GET', 'POST'])
+@app.route('/applications', methods=['GET', 'POST'])
 def applications():
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
     error = None
     form_data = empty_application_form()
     jobs = load_jobs(cursor)
-    
+
     if request.method == 'POST':
         form_data = application_form_data(request.form)
 
@@ -588,11 +818,11 @@ def applications():
                 (
                     form_data['job_id'],
                     form_data['application_date'],
-                    form_data['status'],
-                    form_data['resume_version'],
+                    normalize_application_status(form_data['status']) or 'Applied',
+                    form_data['resume_version'] or None,
                     1 if form_data['cover_letter_sent'] else 0,
                     interview_data_to_json(form_data['interview_notes']),
-                )
+                ),
             )
             conn.commit()
             conn.close()
@@ -607,10 +837,11 @@ def applications():
         error=error,
         form_data=form_data,
         editing_application=None,
+        application_statuses=APPLICATION_STATUSES,
     )
 
 
-@app.route('/applications/<int:application_id>/edit', methods = ['GET', 'POST'])
+@app.route('/applications/<int:application_id>/edit', methods=['GET', 'POST'])
 def edit_application(application_id):
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
@@ -644,15 +875,15 @@ def edit_application(application_id):
                 (
                     form_data['job_id'],
                     form_data['application_date'],
-                    form_data['status'],
-                    form_data['resume_version'],
+                    normalize_application_status(form_data['status']) or 'Applied',
+                    form_data['resume_version'] or None,
                     1 if form_data['cover_letter_sent'] else 0,
                     interview_data_to_json(
                         form_data['interview_notes'],
                         editing_application.get('interview_data'),
                     ),
                     application_id,
-                )
+                ),
             )
             conn.commit()
             conn.close()
@@ -667,10 +898,11 @@ def edit_application(application_id):
         error=error,
         form_data=form_data,
         editing_application=editing_application,
+        application_statuses=APPLICATION_STATUSES,
     )
 
 
-@app.route('/applications/<int:application_id>/delete', methods = ['POST'])
+@app.route('/applications/<int:application_id>/delete', methods=['POST'])
 def delete_application(application_id):
     conn = get_db()
     cursor = conn.cursor()
@@ -679,36 +911,59 @@ def delete_application(application_id):
     conn.close()
     return redirect('/applications')
 
-@app.route('/contacts', methods = ['GET', 'POST'])
+
+@app.route('/contacts', methods=['GET', 'POST'])
 def contacts():
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
     error = None
     form_data = empty_contact_form()
     companies = load_companies(cursor)
-    
+
     if request.method == 'POST':
         form_data = contact_form_data(request.form)
 
         if not company_exists(cursor, form_data['company_id']):
             error = 'Select a valid company before adding a contact.'
         else:
-            cursor.execute(
-                'INSERT INTO contacts (company_id, first_name, last_name, job_title, email, phone, linkedin_url, notes) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)',
-                (
-                    form_data['company_id'],
-                    form_data['first_name'],
-                    form_data['last_name'],
-                    form_data['job_title'],
-                    form_data['email'],
-                    form_data['phone'],
-                    form_data['linkedin_url'],
-                    form_data['notes'],
+            if contacts_use_combined_name(cursor):
+                cursor.execute(
+                    '''
+                    INSERT INTO contacts (company_id, contact_name, title, email, phone, linkedin_url, notes)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    ''',
+                    (
+                        form_data['company_id'],
+                        form_data['contact_name'],
+                        form_data['title'] or None,
+                        form_data['email'] or None,
+                        form_data['phone'] or None,
+                        form_data['linkedin_url'] or None,
+                        form_data['notes'] or None,
+                    ),
                 )
-            )
+            else:
+                first_name, last_name = split_contact_name(form_data['contact_name'])
+                cursor.execute(
+                    '''
+                    INSERT INTO contacts (company_id, first_name, last_name, job_title, email, phone, linkedin_url, notes)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    ''',
+                    (
+                        form_data['company_id'],
+                        first_name,
+                        last_name,
+                        form_data['title'] or None,
+                        form_data['email'] or None,
+                        form_data['phone'] or None,
+                        form_data['linkedin_url'] or None,
+                        form_data['notes'] or None,
+                    ),
+                )
             conn.commit()
             conn.close()
             return redirect('/contacts')
+
     data = load_contacts(cursor)
     conn.close()
     return render_template(
@@ -721,7 +976,7 @@ def contacts():
     )
 
 
-@app.route('/contacts/<int:contact_id>/edit', methods = ['GET', 'POST'])
+@app.route('/contacts/<int:contact_id>/edit', methods=['GET', 'POST'])
 def edit_contact(contact_id):
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
@@ -741,31 +996,57 @@ def edit_contact(contact_id):
         if not company_exists(cursor, form_data['company_id']):
             error = 'Select a valid company before saving this contact.'
         else:
-            cursor.execute(
-                '''
-                UPDATE contacts
-                SET company_id = %s,
-                    first_name = %s,
-                    last_name = %s,
-                    job_title = %s,
-                    email = %s,
-                    phone = %s,
-                    linkedin_url = %s,
-                    notes = %s
-                WHERE contact_id = %s
-                ''',
-                (
-                    form_data['company_id'],
-                    form_data['first_name'],
-                    form_data['last_name'],
-                    form_data['job_title'],
-                    form_data['email'],
-                    form_data['phone'],
-                    form_data['linkedin_url'],
-                    form_data['notes'],
-                    contact_id,
+            if contacts_use_combined_name(cursor):
+                cursor.execute(
+                    '''
+                    UPDATE contacts
+                    SET company_id = %s,
+                        contact_name = %s,
+                        title = %s,
+                        email = %s,
+                        phone = %s,
+                        linkedin_url = %s,
+                        notes = %s
+                    WHERE contact_id = %s
+                    ''',
+                    (
+                        form_data['company_id'],
+                        form_data['contact_name'],
+                        form_data['title'] or None,
+                        form_data['email'] or None,
+                        form_data['phone'] or None,
+                        form_data['linkedin_url'] or None,
+                        form_data['notes'] or None,
+                        contact_id,
+                    ),
                 )
-            )
+            else:
+                first_name, last_name = split_contact_name(form_data['contact_name'])
+                cursor.execute(
+                    '''
+                    UPDATE contacts
+                    SET company_id = %s,
+                        first_name = %s,
+                        last_name = %s,
+                        job_title = %s,
+                        email = %s,
+                        phone = %s,
+                        linkedin_url = %s,
+                        notes = %s
+                    WHERE contact_id = %s
+                    ''',
+                    (
+                        form_data['company_id'],
+                        first_name,
+                        last_name,
+                        form_data['title'] or None,
+                        form_data['email'] or None,
+                        form_data['phone'] or None,
+                        form_data['linkedin_url'] or None,
+                        form_data['notes'] or None,
+                        contact_id,
+                    ),
+                )
             conn.commit()
             conn.close()
             return redirect('/contacts')
@@ -781,7 +1062,8 @@ def edit_contact(contact_id):
         editing_contact=editing_contact,
     )
 
-@app.route('/contacts/<int:contact_id>/delete', methods = ['POST'])
+
+@app.route('/contacts/<int:contact_id>/delete', methods=['POST'])
 def delete_contact(contact_id):
     conn = get_db()
     cursor = conn.cursor()
@@ -790,56 +1072,55 @@ def delete_contact(contact_id):
     conn.close()
     return redirect('/contacts')
 
-@app.route('/job_match', methods = ['GET', 'POST'])
+
+@app.route('/job_match', methods=['GET', 'POST'])
 def job_match():
-    
     matches = []
-    
+    user_skills_input = ''
+
     if request.method == 'POST':
         user_skills_input = request.form.get('user_skills', '')
-        user_skills_list = [skill.strip().lower() for skill in user_skills_input.split(',')]
-        
+        user_skills_list = [skill.strip().lower() for skill in user_skills_input.split(',') if skill.strip()]
+
         conn = get_db()
         cursor = conn.cursor(dictionary=True)
 
-        cursor.execute('''SELECT job_title, jobs.requirements, companies.company_name
-                          FROM jobs
-                          JOIN companies ON jobs.company_id = companies.company_id
-        ''')
+        cursor.execute(
+            '''
+            SELECT jobs.job_title, jobs.requirements, companies.company_name
+            FROM jobs
+            JOIN companies ON jobs.company_id = companies.company_id
+            '''
+        )
         all_jobs = cursor.fetchall()
 
         for job in all_jobs:
-            
-            if not job['requirements']:
+            reqs_list = [req.strip().lower() for req in requirements_list_from_value(job.get('requirements'))]
+            if not reqs_list:
                 continue
-            try:
-                req_dict = json.loads(job['requirements'])
-            except json.JSONDecodeError:
-                continue
-            
-            raw_reqs_list = req_dict.get('required_skills', [])
-            
-            reqs_list = [req.strip().lower() for req in raw_reqs_list]
-            
-            matched = set(user_skills_list).intersection(set(reqs_list))
-            missing = set(reqs_list).difference(set(user_skills_list))
 
-            if len(reqs_list) > 0:
-                match_percentage = int((len(matched) / len(reqs_list)) * 100)
-            else:
-                match_percentage = 0
+            matched = sorted(set(user_skills_list).intersection(reqs_list))
+            missing = sorted(set(reqs_list).difference(user_skills_list))
+            match_percentage = int((len(matched) / len(reqs_list)) * 100)
 
             if match_percentage > 0:
-                matches.append({
-                    'job_title': job['job_title'],
-                    'company_name': job['company_name'],
-                    'match_percentage': match_percentage,
-                    'matched_skills': ', '.join(matched).title(),
-                    'missing_skills': ', '.join(missing).title()
-                })
-        matches = sorted(matches, key=lambda x: x['match_percentage'], reverse=True)
+                matches.append(
+                    {
+                        'job_title': job['job_title'],
+                        'company_name': job['company_name'],
+                        'match_percentage': match_percentage,
+                        'matched_count': len(matched),
+                        'required_count': len(reqs_list),
+                        'matched_skills': ', '.join(matched).title(),
+                        'missing_skills': ', '.join(missing).title(),
+                    }
+                )
+
+        matches = sorted(matches, key=lambda item: item['match_percentage'], reverse=True)
         conn.close()
-    return render_template('job_match.html', matches=matches)
+
+    return render_template('job_match.html', matches=matches, user_skills=user_skills_input)
+
 
 if __name__ == '__main__':
     app.run(debug=True)

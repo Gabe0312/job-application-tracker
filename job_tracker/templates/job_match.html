@@ -12,7 +12,7 @@
     <section class="section-card">
         <form class="panel-form" action="/job_match" method="POST">
             <label for="user_skills">My Skills</label>
-            <input type="text" name="user_skills" id="user_skills" placeholder="e.g., Python, SQL, HTML" required>
+            <input type="text" name="user_skills" id="user_skills" value="{{ user_skills }}" placeholder="e.g., Python, SQL, HTML" required>
             <div class="form-actions">
                 <button type="submit">Find Matches</button>
             </div>
@@ -37,6 +37,7 @@
                     </div>
                     <span class="match-score">{{ match.match_percentage }}% match</span>
                 </div>
+                <p class="match-meta"><strong>Coverage:</strong> {{ match.matched_count }}/{{ match.required_count }} required skills matched</p>
                 <p class="match-meta"><strong>Matched skills:</strong> {{ match.matched_skills or 'None' }}</p>
                 <p class="match-meta missing"><strong>Missing skills:</strong> {{ match.missing_skills or 'None' }}</p>
             </article>

@@ -78,7 +78,7 @@
                         <td class="table-actions">
                             <a class="action-button edit-action" href="/companies/{{ company.company_id }}/edit">Edit</a>
                             {% if company.job_count == 0 and company.contact_count == 0 %}
-                            <form action="/companies/{{ company.company_id }}/delete" method="POST" class="inline-action-form">
+                            <form action="/companies/{{ company.company_id }}/delete" method="POST" class="inline-action-form" data-confirm-message="Delete {{ company.company_name }}? This cannot be undone.">
                                 <button type="submit" class="delete-action">Delete</button>
                             </form>
                             {% else %}

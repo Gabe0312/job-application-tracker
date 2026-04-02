@@ -23,5 +23,16 @@
             {% block content %}
             {% endblock %}
         </main>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                document.querySelectorAll('[data-confirm-message]').forEach(function (form) {
+                    form.addEventListener('submit', function (event) {
+                        if (!window.confirm(form.dataset.confirmMessage)) {
+                            event.preventDefault();
+                        }
+                    });
+                });
+            });
+        </script>
     </body>
 </html>

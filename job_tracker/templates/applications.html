@@ -32,12 +32,9 @@
 
             <label for="status">Status</label>
             <select name="status" id="status">
-                <option value="Applied" {% if form_data.status == 'Applied' %}selected{% endif %}>Applied</option>
-                <option value="Screen" {% if form_data.status == 'Screen' %}selected{% endif %}>Screen</option>
-                <option value="Interview" {% if form_data.status == 'Interview' %}selected{% endif %}>Interview</option>
-                <option value="Rejected" {% if form_data.status == 'Rejected' %}selected{% endif %}>Rejected</option>
-                <option value="Offer Received" {% if form_data.status == 'Offer Received' %}selected{% endif %}>Offer Received</option>
-                <option value="Withdrawn" {% if form_data.status == 'Withdrawn' %}selected{% endif %}>Withdrawn</option>
+                {% for status in application_statuses %}
+                <option value="{{ status }}" {% if form_data.status == status %}selected{% endif %}>{{ status }}</option>
+                {% endfor %}
             </select>
 
             <label for="resume_version">Resume Version</label>
@@ -112,7 +109,7 @@
                         </td>
                         <td class="table-actions">
                             <a class="action-button edit-action" href="/applications/{{ app.application_id }}/edit">Edit</a>
-                            <form action="/applications/{{ app.application_id }}/delete" method="POST" class="inline-action-form">
+                            <form action="/applications/{{ app.application_id }}/delete" method="POST" class="inline-action-form" data-confirm-message="Delete this application record? This cannot be undone.">
                                 <button type="submit" class="delete-action">Delete</button>
                             </form>
                         </td>
