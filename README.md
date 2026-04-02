@@ -106,4 +106,8 @@ Run these steps from the repository root unless noted otherwise.
 
 ## Demo Asset
 
-https://github.com/user-attachments/assets/05d2b6f0-4192-4ad1-adc8-763627d33c9a
+
+
+https://github.com/user-attachments/assets/43ad0a95-3a2a-4b4e-a669-f741f69a6589
+
+
