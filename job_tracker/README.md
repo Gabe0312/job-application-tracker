@@ -34,19 +34,23 @@ Job Application Tracker is a Flask + MySQL app for organizing a job search in on
 job_tracker/
 ├── app.py
 ├── database.py
-├── requirements.txt
-├── schema.sql
+├── templates/
+│   ├── base.html
+│   ├── dashboard.html
+│   ├── companies.html
+│   ├── jobs.html
+│   ├── applications.html
+│   ├── contacts.html
+│   └── job_match.html
 ├── static/
 │   └── style.css
-└── templates/
-    ├── base.html
-    ├── dashboard.html
-    ├── companies.html
-    ├── jobs.html
-    ├── applications.html
-    ├── contacts.html
-    └── job_match.html
+├── schema.sql
+├── AI_USAGE.md
+├── README.md
+└── requirements.txt
 ```
+
+`config.py` is created locally from `config.example.py` during setup and is ignored by Git, so it is not part of the committed project structure.
 
 ## Setup
 
@@ -75,25 +79,31 @@ Run these steps from the `job_tracker` directory.
 
    `schema.sql` is the MySQL dump for the completed project database. Importing it recreates the tables and loads the saved records used by the app.
 
-5. Set database environment variables for the machine where you are running the app:
+5. Create a local database config file:
 
    ```bash
-   export DB_HOST=127.0.0.1
-   export DB_PORT=3306
-   export DB_NAME=job_tracker
-   export DB_USER=root
-   export DB_PASSWORD=your_password_here
+   cp config.example.py config.py
    ```
 
-   If your local MySQL user does not require a password, you can leave `DB_PASSWORD` empty.
+6. Edit `config.py` and set your local MySQL credentials:
 
-6. Start the app:
+   ```python
+   DB_HOST = '127.0.0.1'
+   DB_USER = 'root'
+   DB_PASSWORD = 'your_password_here'
+   DB_NAME = 'job_tracker'
+   DB_PORT = 3306
+   ```
+
+   `config.py` is ignored by Git so your real password is not committed. For course submission, provide the password separately in Canvas as instructed by your professor.
+
+7. Start the app:
 
    ```bash
    python3 app.py
    ```
 
-7. Open `http://127.0.0.1:5000`.
+8. Open `http://127.0.0.1:5000`.
 
 ## Main Pages
 

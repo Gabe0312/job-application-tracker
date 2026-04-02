@@ -138,6 +138,7 @@ celerybeat.pid
 .env
 .envrc
 .venv
+job_tracker/config.py
 env/
 venv/
 ENV/
